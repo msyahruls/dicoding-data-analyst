@@ -2,9 +2,9 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 
-products_df = pd.read_csv('../content/products_dataset.csv')
-order_item_df = pd.read_csv('../content/order_items_dataset.csv')
-orders_df = pd.read_csv('../content/orders_dataset.csv')
+products_df = pd.read_csv('./content/products_dataset.csv')
+order_item_df = pd.read_csv('./content/order_items_dataset.csv')
+orders_df = pd.read_csv('./content/orders_dataset.csv')
 
 columns = ["order_purchase_timestamp","order_approved_at", "order_delivered_carrier_date", "order_delivered_customer_date", "order_estimated_delivery_date"]
 for column in columns:
