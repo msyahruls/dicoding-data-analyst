@@ -1,6 +1,11 @@
+# import matplotlib.pyplot as plt
+# import matplotlib.image as mpimg
 import pandas as pd
 import plotly.express as px
 import streamlit as st
+# import requests
+# from PIL import Image
+# from io import BytesIO
 
 products_df = pd.read_csv('./content/products_dataset.csv')
 order_item_df = pd.read_csv('./content/order_items_dataset.csv')
@@ -33,6 +38,19 @@ monthly_order_df = monthly_order.reset_index()
 monthly_order_df.columns = ['Month', 'Total Orders']
 monthly_order_df['Month'] = monthly_order_df['Month'].astype(str)
 
+# # Geolocation Dataset
+# geolocation_df = pd.read_csv('./content/geolocation_dataset.csv')
+# st.write("## Products Dataset", geolocation_df.head())
+# # data_geolocation_df = geolocation_df.drop_duplicates(subset='customer_unique_id')
+
+# url = 'https://i.pinimg.com/originals/3a/0c/e1/3a0ce18b3c842748c255bc0aa445ad41.jpg'
+# response = requests.get(url)
+# brazil = Image.open(BytesIO(response.content))
+# # ax = data_geolocation_df.plot(kind="scatter", x="geolocation_lng", y="geolocation_lat", figsize=(10,10), alpha=0.3,s=0.3,c='maroon')
+# plt.axis('off')
+# plt.imshow(brazil, extent=[-73.98283055, -33.8,-33.75116944,5.4])
+# map_plot = st.pyplot()
+
 st.write(
   """
   # Proyek Analisis Data: E-Commerce Data
@@ -64,46 +82,49 @@ fig.update_layout(
 )
 st.plotly_chart(fig)
 
-st.write("## Monthly Orders Trend")
-fig = px.line(
-    monthly_order_df,
+# Add date filter
+st.write("## Monthly Orders Trend with Date Filtering")
+st.sidebar.write("### Filter by Date")
+start_date = st.sidebar.date_input("Start Date", value=orders_df['order_purchase_timestamp'].min().date())
+end_date = st.sidebar.date_input("End Date", value=orders_df['order_purchase_timestamp'].max().date())
+
+# Validate date input
+if start_date > end_date:
+    st.sidebar.error("Start date must be before end date!")
+else:
+  # Filter dataset by date
+  filtered_orders_df = orders_df[
+    (orders_df['order_purchase_timestamp'] >= pd.Timestamp(start_date)) &
+    (orders_df['order_purchase_timestamp'] <= pd.Timestamp(end_date))
+  ]
+  filtered_group_param = filtered_orders_df['order_purchase_timestamp'].dt.to_period("M")
+  filtered_monthly_order = filtered_orders_df.groupby(filtered_group_param).order_id.nunique()
+  
+  filtered_monthly_order_df = filtered_monthly_order.reset_index()
+  filtered_monthly_order_df.columns = ['Month', 'Total Orders']
+  filtered_monthly_order_df['Month'] = filtered_monthly_order_df['Month'].astype(str)
+
+  # Plot filtered trend
+  fig = px.line(
+    filtered_monthly_order_df,
     x="Month",
     y="Total Orders",
-    title="Monthly Orders Trend",
+    title=f"Monthly Orders Trend ({start_date} to {end_date})",
     labels={"Month": "Month", "Total Orders": "Total Orders"},
     markers=True
-)
-
-fig.update_layout(
+  )
+  fig.update_layout(
     xaxis_title="Month",
     yaxis_title="Total Orders",
-    xaxis=dict(
-        tickangle=45,
-        tickformat="%b %Y",
-    ),
-    yaxis=dict(
-        title="Total Orders",
-        showgrid=True
-    ),
+    xaxis=dict(tickangle=45),
     title_x=0.5,
     margin=dict(t=50, b=80),
     hovermode="x unified"
-)
+  )
+  st.plotly_chart(fig)
 
-max_value = monthly_order_df["Total Orders"].max()
-max_month = monthly_order_df.loc[monthly_order_df["Total Orders"] == max_value, "Month"].values[0]
 
-fig.add_annotation(
-    x=max_month,
-    y=max_value,
-    text=f"Highest: {max_value}",
-    showarrow=True,
-    arrowhead=2,
-    ax=0,
-    ay=-30,
-    font=dict(color="red", size=12)
-)
-st.plotly_chart(fig)
+# map_plot.plot()
 
 st.write("## Products Dataset", products_df.head())
 st.write("## Order Items Dataset", order_item_df.head())
